@@ -1,5 +1,6 @@
 const Favorite = require('../models/Favorite');
 const User = require('../models/User');
+const Property = require('../models/Property');
 
 // @desc    Add property to favorites
 // @route   POST /api/users/favorites
@@ -8,17 +9,56 @@ const addToFavorites = async (req, res) => {
   try {
     const { propertyId } = req.body;
 
+    if (!propertyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Property ID is required'
+      });
+    }
+
+    // Check if property exists
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: 'Property not found'
+      });
+    }
+
+    // Check if already favorited
+    const existingFavorite = await Favorite.findOne({
+      user: req.user._id,
+      property: propertyId
+    });
+
+    if (existingFavorite) {
+      return res.status(400).json({
+        success: false,
+        message: 'Property already in favorites'
+      });
+    }
+
     const favorite = await Favorite.create({
       user: req.user._id,
       property: propertyId
     });
 
-    res.status(201).json(favorite);
+    const populatedFavorite = await Favorite.findById(favorite._id)
+      .populate('property')
+      .populate('user', 'name email');
+
+    console.log(`Property ${propertyId} added to favorites for user ${req.user._id}`);
+
+    res.status(201).json({
+      success: true,
+      data: populatedFavorite
+    });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Property already in favorites' });
-    }
-    res.status(500).json({ message: error.message });
+    console.error('Add to favorites error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -27,13 +67,32 @@ const addToFavorites = async (req, res) => {
 // @access  Private
 const removeFromFavorites = async (req, res) => {
   try {
-    await Favorite.findOneAndDelete({
+    const { propertyId } = req.params;
+
+    const favorite = await Favorite.findOneAndDelete({
       user: req.user._id,
-      property: req.params.propertyId
+      property: propertyId
     });
-    res.json({ message: 'Removed from favorites' });
+
+    if (!favorite) {
+      return res.status(404).json({
+        success: false,
+        message: 'Favorite not found'
+      });
+    }
+
+    console.log(`Property ${propertyId} removed from favorites for user ${req.user._id}`);
+
+    res.json({
+      success: true,
+      message: 'Removed from favorites'
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Remove from favorites error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -42,6 +101,8 @@ const removeFromFavorites = async (req, res) => {
 // @access  Private
 const getFavorites = async (req, res) => {
   try {
+    console.log(`Fetching favorites for user: ${req.user._id}`);
+
     const favorites = await Favorite.find({ user: req.user._id })
       .populate({
         path: 'property',
@@ -49,9 +110,19 @@ const getFavorites = async (req, res) => {
       })
       .sort('-createdAt');
 
-    res.json(favorites);
+    console.log(`Found ${favorites.length} favorites for user`);
+
+    res.json({
+      success: true,
+      count: favorites.length,
+      data: favorites
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get favorites error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -72,14 +143,21 @@ const updateProfile = async (req, res) => {
     const updatedUser = await user.save();
 
     res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      phone: updatedUser.phone
+      success: true,
+      data: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        phone: updatedUser.phone
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 

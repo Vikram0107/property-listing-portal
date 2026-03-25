@@ -45,7 +45,6 @@ const PropertyDetails = () => {
       setError(errorMessage);
       toast.error(errorMessage);
 
-      // Redirect after 2 seconds if property not found
       if (error.response?.status === 404) {
         setTimeout(() => navigate('/properties'), 2000);
       }
@@ -58,7 +57,10 @@ const PropertyDetails = () => {
     try {
       const response = await axios.get('/users/favorites');
       const favorites = response.data.data || response.data;
-      setIsFavorite(favorites.some(fav => fav.property?._id === id || fav.property === id));
+      setIsFavorite(favorites.some(fav => {
+        const propertyId = fav.property?._id || fav.property;
+        return propertyId === id;
+      }));
     } catch (error) {
       console.error('Error checking favorites:', error);
     }
@@ -179,7 +181,6 @@ const PropertyDetails = () => {
           {/* Main Content */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              {/* Image Section */}
               <div className="relative h-96">
                 {property.images && property.images.length > 0 ? (
                   <img
@@ -212,7 +213,6 @@ const PropertyDetails = () => {
                 </div>
               </div>
 
-              {/* Content Section */}
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -225,7 +225,7 @@ const PropertyDetails = () => {
                       {property.location}
                     </p>
                   </div>
-                  {user && !isOwner && (
+                  {user && !isOwner && property.status === 'approved' && (
                     <button
                       onClick={toggleFavorite}
                       className={`px-4 py-2 rounded-lg transition ${
@@ -244,7 +244,6 @@ const PropertyDetails = () => {
                   {property.listingType === 'rent' && <span className="text-lg font-normal">/month</span>}
                 </p>
 
-                {/* Property Features */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
                     <div className="font-semibold text-lg">{property.bedrooms}</div>
@@ -264,13 +263,11 @@ const PropertyDetails = () => {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-3">Description</h2>
                   <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{property.description}</p>
                 </div>
 
-                {/* Address */}
                 <div>
                   <h2 className="text-xl font-semibold mb-3">Address</h2>
                   <p className="text-gray-700">{property.address}</p>
@@ -281,7 +278,6 @@ const PropertyDetails = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            {/* Owner Info */}
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
               <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
               <div className="p-4 bg-gray-50 rounded-lg">
@@ -290,11 +286,9 @@ const PropertyDetails = () => {
                 {property.owner?.phone && (
                   <p className="text-gray-600 text-sm mt-1">Phone: {property.owner.phone}</p>
                 )}
-                <p className="text-gray-500 text-xs mt-2">Member since: {property.owner?.createdAt ? new Date(property.owner.createdAt).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
 
-            {/* Inquiry Form */}
             {!isOwner && property.status === 'approved' && (
               <div className="bg-white rounded-lg shadow-lg p-6 sticky top-24">
                 <h2 className="text-xl font-semibold mb-4">Interested in this property?</h2>
@@ -304,7 +298,7 @@ const PropertyDetails = () => {
                     <p className="text-gray-600 mb-3">Please login to send an inquiry</p>
                     <button
                       onClick={() => navigate('/login')}
-                      className="w-full btn-primary"
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
                       Login to Contact
                     </button>
@@ -323,7 +317,7 @@ const PropertyDetails = () => {
                   !showInquiryForm ? (
                     <button
                       onClick={() => setShowInquiryForm(true)}
-                      className="w-full btn-primary"
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
                       Send Inquiry
                     </button>
@@ -332,7 +326,7 @@ const PropertyDetails = () => {
                       <textarea
                         value={inquiryMessage}
                         onChange={(e) => setInquiryMessage(e.target.value)}
-                        placeholder="Write your message here... I'm interested in this property and would like to know more details."
+                        placeholder="Write your message here..."
                         className="w-full p-3 border rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         rows="5"
                         required
@@ -341,29 +335,24 @@ const PropertyDetails = () => {
                         <button
                           type="submit"
                           disabled={sendingInquiry}
-                          className="flex-1 btn-primary disabled:opacity-50"
+                          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
                         >
                           {sendingInquiry ? 'Sending...' : 'Send'}
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowInquiryForm(false)}
-                          className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
+                          className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
                         >
                           Cancel
                         </button>
                       </div>
                     </form>
                   )
-                ) : (
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-gray-600">Admin view only</p>
-                  </div>
-                )}
+                ) : null}
               </div>
             )}
 
-            {/* Status for owner */}
             {isOwner && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h2 className="text-xl font-semibold mb-4">Property Status</h2>
