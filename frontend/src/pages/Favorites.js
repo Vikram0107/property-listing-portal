@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import axios from '../utils/axios'; // Make sure to use the configured axios instance
+import { Link } from 'react-router-dom';
+import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import PropertyCard from '../components/PropertyCard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { FaHeartBroken, FaHome } from 'react-icons/fa';
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchFavorites();
@@ -17,80 +18,71 @@ const Favorites = () => {
   const fetchFavorites = async () => {
     try {
       setLoading(true);
-      setError(null);
-      console.log('Fetching favorites...');
-
       const response = await axios.get('/users/favorites');
-      console.log('Favorites response:', response.data);
-
-      // Handle both response formats
       const favoritesList = response.data.data || response.data;
       setFavorites(Array.isArray(favoritesList) ? favoritesList : []);
     } catch (error) {
       console.error('Error fetching favorites:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to fetch favorites';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error('Failed to fetch favorites');
     } finally {
       setLoading(false);
     }
   };
 
-  const removeFavorite = async (propertyId) => {
+  const handleRemoveFavorite = async (propertyId) => {
     try {
-      const response = await axios.delete(`/users/favorites/${propertyId}`);
-      if (response.data.success) {
-        toast.success('Removed from favorites');
-        fetchFavorites(); // Refresh the list
-      }
+      await axios.delete(`/users/favorites/${propertyId}`);
+      toast.success('Removed from favorites');
+      fetchFavorites();
     } catch (error) {
-      console.error('Remove favorite error:', error);
-      toast.error(error.response?.data?.message || 'Failed to remove from favorites');
+      toast.error('Failed to remove from favorites');
     }
   };
+
+  const goBack = () => window.history.back();
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-b from-dark-950 via-dark-900 to-dark-950">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">My Favorite Properties</h1>
+        <button onClick={goBack} className="mb-6 flex items-center space-x-2 text-gray-400 hover:text-primary-400 transition">
+          <span>←</span>
+          <span>Go Back</span>
+        </button>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-            <p className="font-bold">Error Loading Favorites</p>
-            <p>{error}</p>
-            <button
-              onClick={fetchFavorites}
-              className="mt-2 bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
-            >
-              Try Again
-            </button>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-red-500 to-pink-500 mb-4">
+            <FaHeartBroken className="w-10 h-10 text-white" />
           </div>
-        )}
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">
+            My Favorite Properties
+          </h1>
+          <p className="text-gray-400 mt-2">Properties you've saved for later</p>
+        </div>
 
-        {!error && favorites.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-500 text-lg mb-4">You haven't saved any favorite properties yet.</p>
-            <a href="/properties" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-block">
-              Browse Properties
-            </a>
+        {favorites.length === 0 ? (
+          <div className="text-center py-12 card p-12">
+            <div className="text-6xl mb-4">🤍</div>
+            <p className="text-gray-400 text-lg mb-4">You haven't saved any favorite properties yet.</p>
+            <Link to="/properties" className="inline-flex items-center space-x-2 btn-primary">
+              <FaHome className="w-4 h-4" />
+              <span>Browse Properties</span>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {favorites.map(fav => {
               const property = fav.property || fav;
               return (
-                <div key={fav._id} className="relative">
+                <div key={fav._id} className="relative group">
                   <button
-                    onClick={() => removeFavorite(property._id)}
-                    className="absolute top-2 right-2 z-10 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition shadow-lg"
+                    onClick={() => handleRemoveFavorite(property._id)}
+                    className="absolute top-3 left-3 z-20 w-9 h-9 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg hover:scale-110"
                     title="Remove from favorites"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
+                    <FaHeartBroken className="w-4 h-4" />
                   </button>
                   <PropertyCard property={property} />
                 </div>

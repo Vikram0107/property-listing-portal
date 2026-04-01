@@ -1,41 +1,46 @@
 const Favorite = require('../models/Favorite');
 const User = require('../models/User');
 const Property = require('../models/Property');
+const cloudinary = require('cloudinary').v2;
 
-// @desc    Add property to favorites
-// @route   POST /api/users/favorites
-// @access  Private
+// @desc    Get user favorites
+const getFavorites = async (req, res) => {
+  try {
+    const favorites = await Favorite.find({ user: req.user._id })
+      .populate({
+        path: 'property',
+        populate: { path: 'owner', select: 'name email phone' }
+      })
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      count: favorites.length,
+      data: favorites
+    });
+  } catch (error) {
+    console.error('Get favorites error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Add to favorites
 const addToFavorites = async (req, res) => {
   try {
     const { propertyId } = req.body;
 
-    if (!propertyId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Property ID is required'
-      });
-    }
-
-    // Check if property exists
     const property = await Property.findById(propertyId);
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: 'Property not found'
-      });
+      return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    // Check if already favorited
     const existingFavorite = await Favorite.findOne({
       user: req.user._id,
       property: propertyId
     });
 
     if (existingFavorite) {
-      return res.status(400).json({
-        success: false,
-        message: 'Property already in favorites'
-      });
+      return res.status(400).json({ success: false, message: 'Property already in favorites' });
     }
 
     const favorite = await Favorite.create({
@@ -43,28 +48,14 @@ const addToFavorites = async (req, res) => {
       property: propertyId
     });
 
-    const populatedFavorite = await Favorite.findById(favorite._id)
-      .populate('property')
-      .populate('user', 'name email');
-
-    console.log(`Property ${propertyId} added to favorites for user ${req.user._id}`);
-
-    res.status(201).json({
-      success: true,
-      data: populatedFavorite
-    });
+    res.status(201).json({ success: true, data: favorite });
   } catch (error) {
     console.error('Add to favorites error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // @desc    Remove from favorites
-// @route   DELETE /api/users/favorites/:propertyId
-// @access  Private
 const removeFromFavorites = async (req, res) => {
   try {
     const { propertyId } = req.params;
@@ -75,60 +66,17 @@ const removeFromFavorites = async (req, res) => {
     });
 
     if (!favorite) {
-      return res.status(404).json({
-        success: false,
-        message: 'Favorite not found'
-      });
+      return res.status(404).json({ success: false, message: 'Favorite not found' });
     }
 
-    console.log(`Property ${propertyId} removed from favorites for user ${req.user._id}`);
-
-    res.json({
-      success: true,
-      message: 'Removed from favorites'
-    });
+    res.json({ success: true, message: 'Removed from favorites' });
   } catch (error) {
     console.error('Remove from favorites error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Get user favorites
-// @route   GET /api/users/favorites
-// @access  Private
-const getFavorites = async (req, res) => {
-  try {
-    console.log(`Fetching favorites for user: ${req.user._id}`);
-
-    const favorites = await Favorite.find({ user: req.user._id })
-      .populate({
-        path: 'property',
-        populate: { path: 'owner', select: 'name email phone' }
-      })
-      .sort('-createdAt');
-
-    console.log(`Found ${favorites.length} favorites for user`);
-
-    res.json({
-      success: true,
-      count: favorites.length,
-      data: favorites
-    });
-  } catch (error) {
-    console.error('Get favorites error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private
 const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -136,11 +84,27 @@ const updateProfile = async (req, res) => {
     user.name = req.body.name || user.name;
     user.phone = req.body.phone || user.phone;
 
-    if (req.body.password) {
-      user.password = req.body.password;
+    // Handle avatar upload
+    if (req.file) {
+      // Delete old avatar from cloudinary if exists
+      if (user.profilePicture) {
+        try {
+          const publicId = user.profilePicture.split('/').pop().split('.')[0];
+          await cloudinary.uploader.destroy(`avatars/${publicId}`);
+        } catch (err) {
+          console.error('Error deleting old avatar:', err);
+        }
+      }
+      user.profilePicture = req.file.path;
     }
 
     const updatedUser = await user.save();
+
+    // Generate new token
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({ id: updatedUser._id }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
 
     res.json({
       success: true,
@@ -149,15 +113,14 @@ const updateProfile = async (req, res) => {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
-        phone: updatedUser.phone
+        phone: updatedUser.phone,
+        profilePicture: updatedUser.profilePicture,
+        token: token
       }
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
