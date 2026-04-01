@@ -1,4 +1,3 @@
-// Hii from Vikram
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -26,6 +25,7 @@ const propertyRoutes = require('./routes/propertyRoutes');
 const inquiryRoutes = require('./routes/inquiryRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -33,6 +33,7 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/inquiries', inquiryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -72,8 +73,15 @@ app.listen(PORT, () => {
   console.log(`\n   POST   /api/auth/register`);
   console.log(`   POST   /api/auth/login`);
   console.log(`   GET    /api/auth/me`);
+  console.log(`   POST   /api/auth/forgot-password`);
+  console.log(`   PUT    /api/auth/reset-password/:token`);
+  console.log(`   PUT    /api/auth/change-password`);
   console.log(`\n   GET    /api/inquiries/my-inquiries`);
   console.log(`   GET    /api/inquiries/owner-inquiries`);
   console.log(`   POST   /api/inquiries`);
   console.log(`   PUT    /api/inquiries/:id/respond`);
+  console.log(`\n   GET    /api/notifications`);
+  console.log(`   PUT    /api/notifications/:id/read`);
+  console.log(`   PUT    /api/notifications/read-all`);
+  console.log(`   DELETE /api/notifications/:id`);
 });

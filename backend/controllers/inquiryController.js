@@ -1,5 +1,6 @@
 const Inquiry = require('../models/Inquiry');
 const Property = require('../models/Property');
+const { createNotification } = require('./notificationController');
 
 // @desc    Create an inquiry
 // @route   POST /api/inquiries
@@ -40,8 +41,22 @@ const createInquiry = async (req, res) => {
       message
     });
 
+    // Create notification for property owner
+    await createNotification(
+      property.owner,
+      'inquiry',
+      'New Inquiry Received',
+      `${req.user.name} has sent an inquiry about your property "${property.title}"`,
+      {
+        inquiryId: inquiry._id,
+        propertyId: propertyId,
+        buyerId: req.user._id,
+        propertyTitle: property.title
+      }
+    );
+
     const populatedInquiry = await Inquiry.findById(inquiry._id)
-      .populate('property', 'title price location images')
+      .populate('property', 'title price location images listingType')
       .populate('buyer', 'name email phone')
       .populate('owner', 'name email phone');
 
@@ -130,7 +145,10 @@ const respondToInquiry = async (req, res) => {
       });
     }
 
-    const inquiry = await Inquiry.findById(req.params.id);
+    const inquiry = await Inquiry.findById(req.params.id)
+      .populate('property', 'title')
+      .populate('buyer', 'name email')
+      .populate('owner', 'name email');
 
     if (!inquiry) {
       return res.status(404).json({
@@ -140,7 +158,7 @@ const respondToInquiry = async (req, res) => {
     }
 
     // Check if user is the owner
-    if (inquiry.owner.toString() !== req.user._id.toString()) {
+    if (inquiry.owner._id.toString() !== req.user._id.toString()) {
       return res.status(401).json({
         success: false,
         message: 'Not authorized to respond to this inquiry'
@@ -151,6 +169,19 @@ const respondToInquiry = async (req, res) => {
     inquiry.status = 'responded';
     inquiry.respondedAt = Date.now();
     await inquiry.save();
+
+    // Create notification for buyer
+    await createNotification(
+      inquiry.buyer._id,
+      'inquiry_response',
+      'Inquiry Response Received',
+      `${req.user.name} has responded to your inquiry about "${inquiry.property.title}"`,
+      {
+        inquiryId: inquiry._id,
+        propertyId: inquiry.property._id,
+        propertyTitle: inquiry.property.title
+      }
+    );
 
     const updatedInquiry = await Inquiry.findById(inquiry._id)
       .populate('property', 'title price location')

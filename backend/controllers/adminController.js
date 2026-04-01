@@ -1,6 +1,7 @@
 const Property = require('../models/Property');
 const User = require('../models/User');
 const Inquiry = require('../models/Inquiry');
+const { createNotification } = require('./notificationController');
 
 // @desc    Get platform statistics
 // @route   GET /api/admin/stats
@@ -82,7 +83,7 @@ const getPendingProperties = async (req, res) => {
 // @access  Private/Admin
 const approveProperty = async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id);
+    const property = await Property.findById(req.params.id).populate('owner', 'name email');
 
     if (!property) {
       return res.status(404).json({
@@ -95,6 +96,18 @@ const approveProperty = async (req, res) => {
     await property.save();
 
     console.log(`Property ${property._id} approved`);
+
+    // Create notification for property owner
+    await createNotification(
+      property.owner._id,
+      'property_approved',
+      '🎉 Property Approved!',
+      `Great news! Your property "${property.title}" has been approved and is now live on the platform. Start receiving inquiries!`,
+      {
+        propertyId: property._id,
+        propertyTitle: property.title
+      }
+    );
 
     res.json({
       success: true,
@@ -115,7 +128,7 @@ const approveProperty = async (req, res) => {
 // @access  Private/Admin
 const rejectProperty = async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id);
+    const property = await Property.findById(req.params.id).populate('owner', 'name email');
 
     if (!property) {
       return res.status(404).json({
@@ -128,6 +141,18 @@ const rejectProperty = async (req, res) => {
     await property.save();
 
     console.log(`Property ${property._id} rejected`);
+
+    // Create notification for property owner
+    await createNotification(
+      property.owner._id,
+      'property_rejected',
+      'Property Update Required',
+      `Your property "${property.title}" needs some changes before approval. Please review and resubmit with the required information.`,
+      {
+        propertyId: property._id,
+        propertyTitle: property.title
+      }
+    );
 
     res.json({
       success: true,

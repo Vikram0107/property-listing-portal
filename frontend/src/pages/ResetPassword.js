@@ -1,26 +1,43 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
+import axios from '../utils/axios';
+import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 
-const Login = () => {
-  const [email, setEmail] = useState('');
+const ResetPassword = () => {
+  const { token } = useParams();
+  const navigate = useNavigate();
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
 
-    const result = await login(email, password);
-    if (result.success) {
-      navigate('/dashboard');
+    try {
+      await axios.put(`/auth/reset-password/${token}`, { password });
+      toast.success('Password reset successful! Please login with your new password.');
+      navigate('/login');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -66,10 +83,10 @@ const Login = () => {
                     transition={{ duration: 0.5, delay: 0.5 }}
                     className="text-5xl mb-4"
                   >
-                    🔐
+                    🔒
                   </motion.div>
-                  <h2 className="text-3xl font-bold text-gray-200">Welcome Back!</h2>
-                  <p className="text-gray-400 mt-2">Sign in to your account</p>
+                  <h2 className="text-3xl font-bold text-gray-200">Reset Password</h2>
+                  <p className="text-gray-400 mt-2">Enter your new password</p>
                 </motion.div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -78,31 +95,7 @@ const Login = () => {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-200 transition-all"
-                        placeholder="Enter your email"
-                      />
-                      <motion.div
-                        className="absolute left-0 bottom-0 h-0.5 bg-primary-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: email ? '100%' : 0 }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ x: 50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -110,7 +103,7 @@ const Login = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-200 pr-12"
-                        placeholder="Enter your password"
+                        placeholder="Enter new password"
                       />
                       <button
                         type="button"
@@ -129,18 +122,34 @@ const Login = () => {
                   </motion.div>
 
                   <motion.div
-                    initial={{ y: 50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="flex items-center justify-between"
+                    initial={{ x: 50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
                   >
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-dark-600 bg-dark-700 text-primary-500 focus:ring-primary-500" />
-                      <span className="ml-2 text-sm text-gray-400">Remember me</span>
-                    </label>
-                    <Link to="/forgot-password" className="text-sm text-primary-400 hover:text-primary-300">
-                      Forgot password?
-                    </Link>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-200 pr-12"
+                        placeholder="Confirm your new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      >
+                        {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                      <motion.div
+                        className="absolute left-0 bottom-0 h-0.5 bg-primary-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: confirmPassword ? '100%' : 0 }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
                   </motion.div>
 
                   <motion.button
@@ -153,7 +162,7 @@ const Login = () => {
                         ? 'linear-gradient(135deg, #4b5563, #374151)'
                         : 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
                     }}
-                    className="w-full py-3 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all relative overflow-hidden"
+                    className="w-full py-3 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all"
                   >
                     {loading ? (
                       <motion.div
@@ -162,37 +171,11 @@ const Login = () => {
                         className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto"
                       />
                     ) : (
-                      'Sign In'
+                      'Reset Password'
                     )}
                   </motion.button>
                 </form>
-
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="mt-6 text-center"
-                >
-                  <p className="text-gray-400">
-                    Don't have an account?{' '}
-                    <Link to="/register" className="text-primary-400 hover:text-primary-300 font-semibold">
-                      Sign up
-                    </Link>
-                  </p>
-                </motion.div>
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="mt-6 text-center text-sm text-gray-500"
-            >
-              <p>Demo Accounts:</p>
-              <p>Admin: admin@example.com / admin123</p>
-              <p>Owner: owner@test.com / password123</p>
-              <p>Buyer: buyer@test.com / password123</p>
             </motion.div>
           </motion.div>
         </div>
@@ -201,4 +184,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ResetPassword;
