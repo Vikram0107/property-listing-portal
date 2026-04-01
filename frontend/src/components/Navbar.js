@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// import { motion, AnimatePresence } from 'framer-motion';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -63,73 +63,76 @@ const Navbar = () => {
               ))}
 
               {user ? (
-                <div className="relative ml-4">
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-dark-800/50 hover:bg-dark-700/50 transition-all duration-200"
-                  >
-                    <div className="relative">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
-                        {user.profilePicture ? (
-                          <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                        ) : (
-                          user.name?.charAt(0).toUpperCase()
-                        )}
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-900"></div>
-                    </div>
-                    <span className="text-gray-200">{user.name}</span>
-                    <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-dark-800 rounded-2xl shadow-2xl overflow-hidden z-50 border border-dark-700">
-                      <div className="p-4 border-b border-dark-700 flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
+                <>
+                  <NotificationBell />
+                  <div className="relative ml-2">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-dark-800/50 hover:bg-dark-700/50 transition-all duration-200"
+                    >
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
                           {user.profilePicture ? (
                             <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                           ) : (
                             user.name?.charAt(0).toUpperCase()
                           )}
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-200">{user.name}</p>
-                          <p className="text-sm text-gray-400">{user.email}</p>
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-900"></div>
+                      </div>
+                      <span className="text-gray-200">{user.name}</span>
+                      <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-64 bg-dark-800 rounded-2xl shadow-2xl overflow-hidden z-50 border border-dark-700">
+                        <div className="p-4 border-b border-dark-700 flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
+                            {user.profilePicture ? (
+                              <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                              user.name?.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-200">{user.name}</p>
+                            <p className="text-sm text-gray-400">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="py-2">
+                          <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
+                            👤 My Profile
+                          </Link>
+                          <Link to="/dashboard" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
+                            📊 Dashboard
+                          </Link>
+                          {(user.role === 'owner' || user.role === 'admin') && (
+                            <Link to="/add-property" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
+                              ➕ List Property
+                            </Link>
+                          )}
+                          <Link to="/favorites" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
+                            ❤️ Favorites
+                          </Link>
+                          <Link to="/my-inquiries" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
+                            💬 Inquiries
+                          </Link>
+                          {user.role === 'admin' && (
+                            <Link to="/admin" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
+                              ⚙️ Admin Panel
+                            </Link>
+                          )}
+                          <hr className="my-2 border-dark-700" />
+                          <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-400 transition">
+                            🚪 Logout
+                          </button>
                         </div>
                       </div>
-                      <div className="py-2">
-                        <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
-                          👤 My Profile
-                        </Link>
-                        <Link to="/dashboard" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
-                          📊 Dashboard
-                        </Link>
-                        {(user.role === 'owner' || user.role === 'admin') && (
-                          <Link to="/add-property" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
-                            ➕ List Property
-                          </Link>
-                        )}
-                        <Link to="/favorites" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
-                          ❤️ Favorites
-                        </Link>
-                        <Link to="/my-inquiries" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
-                          💬 Inquiries
-                        </Link>
-                        {user.role === 'admin' && (
-                          <Link to="/admin" onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 hover:bg-dark-700 text-gray-300 hover:text-primary-400 transition">
-                            ⚙️ Admin Panel
-                          </Link>
-                        )}
-                        <hr className="my-2 border-dark-700" />
-                        <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-400 transition">
-                          🚪 Logout
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center space-x-3 ml-4">
                   <Link to="/login" className="px-5 py-2 rounded-xl text-gray-300 hover:text-primary-400 transition">
@@ -173,18 +176,21 @@ const Navbar = () => {
               ))}
               {user ? (
                 <>
-                  <div className="py-3 px-4 border-t border-dark-700 mt-2 flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
-                      {user.profilePicture ? (
-                        <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                      ) : (
-                        user.name?.charAt(0).toUpperCase()
-                      )}
+                  <div className="py-3 px-4 border-t border-dark-700 mt-2 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
+                        {user.profilePicture ? (
+                          <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                        ) : (
+                          user.name?.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-200">{user.name}</p>
+                        <p className="text-sm text-gray-400">{user.email}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-200">{user.name}</p>
-                      <p className="text-sm text-gray-400">{user.email}</p>
-                    </div>
+                    <NotificationBell />
                   </div>
                   <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 px-4 hover:bg-dark-700 rounded-xl">👤 Profile</Link>
                   <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 px-4 hover:bg-dark-700 rounded-xl">📊 Dashboard</Link>
