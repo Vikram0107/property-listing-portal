@@ -30,7 +30,8 @@ const Home = () => {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // words.length is stable, so we can safely ignore
 
   useEffect(() => {
     const handleMouseMove = (e) => {
